@@ -1,4 +1,5 @@
 - https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 - https://esp32io.com/tutorials/esp32-ws2812b-led-strip
 - https://www.circuitbread.com/tutorials/embedded-c-programming-with-the-pic18f14k50-10-controlling-ws2812b-leds
+- https://github.com/espressif/esp-idf/blob/master/examples/peripherals/gpio/generic_gpio/main/gpio_example_main.c
 
