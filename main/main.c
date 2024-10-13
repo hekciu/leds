@@ -7,6 +7,8 @@
 #include "esp_flash.h"
 #include "esp_system.h"
 
+#include <FastLED.h>
+
 void app_main(void)
 {
     printf("Hello world!\n");
