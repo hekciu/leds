@@ -7,6 +7,7 @@
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "driver/gpio.h"
+#include "driver/timer.h"
 
 #include "_WS2812B.h"
 
@@ -14,25 +15,14 @@
 #define GPIO_BIT_MASK (1ULL<<OUTPUT_PIN) 
 #define NUM_LEDS 10
 
-void flash_red() {
-    int * output = malloc(24);
-    printf("flashin red on pin: %d\n", OUTPUT_PIN);
-    createDataPackage(255, 0, 0, output); 
+#define TIMER_DIVIDER 2
 
-    sendReset();
+// I guess??
+#define ABP_CLOCK_FREQ_MHZ 80
 
-    for (int i = 0; i < NUM_LEDS; i++) {
-        for (int nBit = 0; nBit < 24; nBit++) {
-            if (*(output + nBit) == 0) {
-                sendZero(); 
-            } else {
-                sendOne();
-            }
-        } 
-    }
+#define TIMER_FREQ (ABP_CLOCK_FREQ_MHZ / TIMER_DIVIDER)
+#define NS_PER_TICK (1000 / TIMER_FREQ)
 
-    free(output);
-}
 
 void app_main(void)
 {
@@ -47,8 +37,37 @@ void app_main(void)
     ioConf.pin_bit_mask = GPIO_BIT_MASK;
     gpio_config(&ioConf);
 
+    timer_group_t timerGroup = 0;
+    timer_idx_t timerId = 0;
+    timer_config_t timerConfig = {
+        .divider = TIMER_DIVIDER,
+        .counter_dir = TIMER_COUNT_UP,
+        .counter_en = false,
+        .alarm_en = false,
+        .auto_reload = false,
+    }; // default clock source is APB
+
+    printf("Timer real frequency: %d, ns per tick: %d\n", TIMER_FREQ, NS_PER_TICK);
+
+    int * output = malloc(24 * sizeof(int));
+    printf("flashin red on pin: %d\n", OUTPUT_PIN);
+    createDataPackage(255, 0, 0, output); 
+
     for(;;) {
         vTaskDelay(1000);
-        flash_red(); 
+        if(timer_init(timerGroup, timerId, &timerConfig) != ESP_OK) {
+            fprintf(stderr, "could not initialize hardware timer with index: %d, in group: %d\n", timerId, timerGroup);         
+            continue;
+        }
+
+        if(sendData(timerGroup, timerId, OUTPUT_PIN, output, NS_PER_TICK) == 0) {
+            printf("data sent successfully\n");     
+        } else {
+            fprintf(stderr, "error with sending data\n");
+        }; 
+
+        timer_deinit(timerGroup, timerId);
     }    
+
+    free(output);
 }
