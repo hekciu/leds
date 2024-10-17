@@ -6,6 +6,7 @@
 #include "esp_attr.h"
 #include "hal/cpu_hal.h"
 #include "esp_clk_tree.h"
+#include "hal/gpio_hal.h"
 
 
 #define T0H_ns 400
@@ -76,19 +77,25 @@ int IRAM_ATTR sendData(int gpioPin, int * data) {
     while (currentCheckpoint < 48) {
         if (cpu_hal_get_cycle_count() > startCycleCount + *(timerCheckpoints + currentCheckpoint)) {
             //sendData
+            if (currentCheckpoint % 2 == 0) {
+                REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
+            } else {
+                REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
+            }
             ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
             currentCheckpoint++;
         }
     }
-    //timer_pause(timerGroup, timerId);
     xTaskResumeAll();
     taskEXIT_CRITICAL(&_spinlock);
     portENABLE_INTERRUPTS();
 
+    /*
     for (int i = 0; i < 48; i++) {
         printf("counter at checkpoint number %d, expected value: %d, got: %lld\n", i, timerCheckpoints[i], ticksAtCheckpoint[i]); 
     }
+    */
 
-    // wait 60us 
+    ets_delay_us(TReset_us);
     return -1;
 }
