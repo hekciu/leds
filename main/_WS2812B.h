@@ -2,8 +2,20 @@
 #include <stdint.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "driver/gpio.h"
 #include <rom/ets_sys.h>
+#include "esp_attr.h"
+#include "hal/cpu_hal.h"
+#include "esp_clk_tree.h"
+
+
+#define T0H_ns 400
+#define T1H_ns 800
+#define T0L_ns 850
+#define T1L_ns 450
+#define TReset_us 60
+
+static portMUX_TYPE _spinlock = portMUX_INITIALIZER_UNLOCKED;
+
 
 /*
     Write blob of 24 bits to output in order that makes is ready for transmitting
@@ -29,45 +41,48 @@ void createDataPackage(uint8_t R, uint8_t G, uint8_t B, int * output) {
 
 
 
-#define T0H_ns 400
-#define T1H_ns 800
-#define T0L_ns 850
-#define T1L_ns 450
-#define TReset_us 60
+int IRAM_ATTR sendData(int gpioPin, int * data) {
+    uint32_t cpuFreq;
+    if(esp_clk_tree_src_get_freq_hz(SOC_MOD_CLK_CPU, ESP_CLK_TREE_SRC_FREQ_PRECISION_EXACT, &cpuFreq) != 0) {
+        fprintf(stderr, "Could not get cpu frequency, unable to send data!\n");
+    };
 
-int sendData(timer_group_t timerGroup, timer_idx_t timerId, int gpioPin, int * data, int nsPerTick) {
-    int timerCheckpoints[48];
+    printf("CPU frequency: %ld\n", cpuFreq);
+
+    int * timerCheckpoints = malloc(48 * sizeof(int));
     int transmissionDataLength = 0;
+
+    int nsPerCpuTick = (1000*1000*1000)/cpuFreq;
     
     for (int i = 0; i < 48; i = i + 2) {
         int bitValue = *(data + i);
         
-        int highTimeTicks = bitValue == 0 ? (T0H_ns / nsPerTick) : (T1H_ns / nsPerTick); 
-        int lowTimeTicks = bitValue == 0 ? (T0L_ns / nsPerTick) : (T1L_ns / nsPerTick); 
+        int highTimeTicks = bitValue == 0 ? (T0H_ns / nsPerCpuTick) : (T1H_ns / nsPerCpuTick); 
+        int lowTimeTicks = bitValue == 0 ? (T0L_ns / nsPerCpuTick) : (T1L_ns / nsPerCpuTick); 
          
-        timerCheckpoints[i] = transmissionDataLength + highTimeTicks; 
+        *(timerCheckpoints + i) = transmissionDataLength + highTimeTicks; 
         transmissionDataLength += highTimeTicks;
-        timerCheckpoints[i + 1] = transmissionDataLength + lowTimeTicks; 
+        *(timerCheckpoints + i + 1) = transmissionDataLength + lowTimeTicks; 
         transmissionDataLength += lowTimeTicks;
-        printf("checkpoint: %d\n", timerCheckpoints[i]);
-        printf("checkpoint: %d\n", timerCheckpoints[i + 1]);
     }
 
     uint64_t ticksAtCheckpoint[48];
     // do infinite loop (disable everything) and wait for checkpoints
     int currentCheckpoint = 0;
-    uint64_t counterValue = 0;
     portDISABLE_INTERRUPTS();
-    timer_start(timerGroup, timerId);
+    taskENTER_CRITICAL(&_spinlock);
+    vTaskSuspendAll();
+    uint64_t startCycleCount = cpu_hal_get_cycle_count(); 
     while (currentCheckpoint < 48) {
-        timer_get_counter_value(timerGroup, timerId, &counterValue);
-        if (counterValue >= timerCheckpoints[currentCheckpoint]) {
+        if (cpu_hal_get_cycle_count() > startCycleCount + *(timerCheckpoints + currentCheckpoint)) {
             //sendData
-            ticksAtCheckpoint[currentCheckpoint] = counterValue;
+            ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
             currentCheckpoint++;
         }
     }
-    timer_pause(timerGroup, timerId);
+    //timer_pause(timerGroup, timerId);
+    xTaskResumeAll();
+    taskEXIT_CRITICAL(&_spinlock);
     portENABLE_INTERRUPTS();
 
     for (int i = 0; i < 48; i++) {
