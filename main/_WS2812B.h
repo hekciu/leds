@@ -42,7 +42,7 @@ void createDataPackage(uint8_t R, uint8_t G, uint8_t B, int * output) {
 
 
 
-int IRAM_ATTR sendData(int gpioPin, int * data) {
+int IRAM_ATTR sendData(int gpioPin, int * data, int n) {
     uint32_t cpuFreq;
     if(esp_clk_tree_src_get_freq_hz(SOC_MOD_CLK_CPU, ESP_CLK_TREE_SRC_FREQ_PRECISION_EXACT, &cpuFreq) != 0) {
         fprintf(stderr, "Could not get cpu frequency, unable to send data!\n");
@@ -70,27 +70,27 @@ int IRAM_ATTR sendData(int gpioPin, int * data) {
 
     uint64_t ticksAtCheckpoint[48];
     // do infinite loop (disable everything) and wait for checkpoints
-    int currentCheckpoint = 0;
     portDISABLE_INTERRUPTS();
     taskENTER_CRITICAL(&_spinlock);
     vTaskSuspendAll();
-    uint64_t startCycleCount = cpu_hal_get_cycle_count(); 
-    REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
-    while (currentCheckpoint < 48) {
-        if (cpu_hal_get_cycle_count() > startCycleCount + *(timerCheckpoints + currentCheckpoint)) {
-            //sendData
-            if (currentCheckpoint % 2 == 0) {
-                // gpio_set_level(gpioPin, 1); 
-                REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
-            } else {
-                //gpio_set_level(gpioPin, 0); 
-                REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
+    for (int i = 0; i < n; ++i) {
+        uint64_t startCycleCount = cpu_hal_get_cycle_count(); 
+        int currentCheckpoint = 0;
+        REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
+        while (currentCheckpoint < 48) {
+            if (cpu_hal_get_cycle_count() > startCycleCount + *(timerCheckpoints + currentCheckpoint)) {
+                //sendData
+                if (currentCheckpoint % 2 == 0) {
+                    REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
+                } else {
+                    REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
+                }
+                ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
+                currentCheckpoint++;
             }
-            ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
-            currentCheckpoint++;
         }
+        REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
     }
-    REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
     xTaskResumeAll();
     taskEXIT_CRITICAL(&_spinlock);
     portENABLE_INTERRUPTS();

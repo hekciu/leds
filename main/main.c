@@ -15,26 +15,25 @@
 #define OUTPUT_PIN GPIO_NUM_18
 #define OUTPUT_REG BIT18
 #define GPIO_BIT_MASK (1ULL<<OUTPUT_PIN) 
-#define NUM_LEDS 10
+#define N_LEDS 300
 
 #define STACK_SIZE 4096
 
-void flashLedsTask (void * parameters) {
-    int * output = (int *) parameters;
+
+void flashLedsTask (void * colorParameter) {
+    int * color = (int *) colorParameter;
 
     for(;;) {
-        if(sendData(OUTPUT_REG, output) == 0) {
+        if(sendData(OUTPUT_REG, color, N_LEDS) == 0) {
             printf("data sent successfully\n");     
         } else {
             fprintf(stderr, "error with sending data\n");
         }; 
-        // REG_WRITE(GPIO_OUT_W1TS_REG, OUTPUT_REG);
-        printf("flash red task bitches\n");
-        // gpio_set_level(OUTPUT_PIN, 1);
+        printf("flash led task bitches\n");
         vTaskDelay(100);
     }    
 
-    free(output); // do I even have to place it anywhere?
+    free(color); // do I even have to place it anywhere?
 }
 
 void app_main(void)
@@ -52,10 +51,11 @@ void app_main(void)
 
     int * output = malloc(24 * sizeof(int));
     printf("flashin red on pin: %d\n", OUTPUT_PIN);
-    createDataPackage(255, 0, 0, output); 
+    createDataPackage(0, 0, 255, output); 
 
     BaseType_t xReturned;
     TaskHandle_t xHandle = NULL;
-
-    xReturned = xTaskCreate(flashLedsTask, "flash_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
+    
+    //xReturned = xTaskCreate(flashLedsTask, "flash_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
+    xReturned = xTaskCreate(flashLedsTask, "flash_n_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
 }
