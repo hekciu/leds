@@ -56,7 +56,8 @@ int IRAM_ATTR sendData(int gpioPin, int * data) {
     int nsPerCpuTick = (1000*1000*1000)/cpuFreq;
     
     for (int i = 0; i < 48; i = i + 2) {
-        int bitValue = *(data + i);
+        int bitValue = *(data + i/2);
+        // printf("bit value at %d: %d\n", i/2, bitValue);
         
         int highTimeTicks = bitValue == 0 ? (T0H_ns / nsPerCpuTick) : (T1H_ns / nsPerCpuTick); 
         int lowTimeTicks = bitValue == 0 ? (T0L_ns / nsPerCpuTick) : (T1L_ns / nsPerCpuTick); 
@@ -74,28 +75,27 @@ int IRAM_ATTR sendData(int gpioPin, int * data) {
     taskENTER_CRITICAL(&_spinlock);
     vTaskSuspendAll();
     uint64_t startCycleCount = cpu_hal_get_cycle_count(); 
+    REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
     while (currentCheckpoint < 48) {
         if (cpu_hal_get_cycle_count() > startCycleCount + *(timerCheckpoints + currentCheckpoint)) {
             //sendData
             if (currentCheckpoint % 2 == 0) {
-                REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
-            } else {
+                // gpio_set_level(gpioPin, 1); 
                 REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
+            } else {
+                //gpio_set_level(gpioPin, 0); 
+                REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
             }
             ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
             currentCheckpoint++;
         }
     }
+    REG_WRITE(GPIO_OUT_W1TC_REG, gpioPin);
     xTaskResumeAll();
     taskEXIT_CRITICAL(&_spinlock);
     portENABLE_INTERRUPTS();
 
-    /*
-    for (int i = 0; i < 48; i++) {
-        printf("counter at checkpoint number %d, expected value: %d, got: %lld\n", i, timerCheckpoints[i], ticksAtCheckpoint[i]); 
-    }
-    */
-
     ets_delay_us(TReset_us);
-    return -1;
+    free(timerCheckpoints);
+    return 0;
 }
