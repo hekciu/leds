@@ -1,6 +1,10 @@
+Leds control:
 - https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 - https://esp32io.com/tutorials/esp32-ws2812b-led-strip
 - https://www.circuitbread.com/tutorials/embedded-c-programming-with-the-pic18f14k50-10-controlling-ws2812b-leds
 - https://github.com/espressif/esp-idf/blob/master/examples/peripherals/gpio/generic_gpio/main/gpio_example_main.c
 - https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32/api-reference/peripherals/timer.html
 - https://www.reddit.com/r/esp32/comments/f529hf/results_comparing_the_speeds_of_different_gpio/?rdt=59863
+
+Android app:
+- https://authmane512.medium.com/how-to-build-an-apk-from-command-line-without-ide-7260e1e22676
