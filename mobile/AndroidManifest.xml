@@ -1,0 +1,21 @@
+<?xml version='1.0'?>
+<manifest xmlns:a='http://schemas.android.com/apk/res/android' package='com.example.leds-mobile' a:versionCode='0' a:versionName='0'>
+    <application a:label='Bluetooth controlled led strip'>
+        <activity a:name='com.example.leds-mobile.MainActivity'>
+             <intent-filter>
+                <category a:name='android.intent.category.LAUNCHER'/>
+                <action a:name='android.intent.action.MAIN'/>
+             </intent-filter>
+        </activity>
+    </application>
+</manifest><?xml version='1.0'?>
+<manifest xmlns:a='http://schemas.android.com/apk/res/android' package='com.example.leds-mobile' a:versionCode='0' a:versionName='0'>
+    <application a:label='Bluetooth controlled led strip'>
+        <activity a:name='com.example.leds-mobile.MainActivity'>
+             <intent-filter>
+                <category a:name='android.intent.category.LAUNCHER'/>
+                <action a:name='android.intent.action.MAIN'/>
+             </intent-filter>
+        </activity>
+    </application>
+</manifest>

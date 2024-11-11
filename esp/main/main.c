@@ -51,7 +51,7 @@ void app_main(void)
 
     int * output = malloc(24 * sizeof(int));
     printf("flashin red on pin: %d\n", OUTPUT_PIN);
-    createDataPackage(0, 0, 255, output); 
+    createDataPackage(255, 255, 255, output); 
 
     BaseType_t xReturned;
     TaskHandle_t xHandle = NULL;

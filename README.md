@@ -13,4 +13,9 @@
 - idf.py -p PORT flash monitor # replace PORT with real one from /dev/
 
 ## Building mobile app'
-TBD
+- sudo apt-get install openjdk-8-jdk-headless
+- wget https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
+- sudo mkdir -p /opt/android-sdk
+- sudo unzip sdk-tools-linux-3859397.zip -d /opt/android-sdk
+- rm sdk-tools-linux-3859397.zip
+- sudo apt-get install adb
