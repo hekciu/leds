@@ -1,4 +1,10 @@
-export PROJ=$(pwd)
-sudo /opt/android-sdk/build-tools/26.0.1/aapt package -f -m -J $PROJ/src -M $PROJ/AndroidManifest.xml -S $PROJ/res -I /opt/android-sdk/platforms/android-19/android.jar
-javac -d obj -classpath src -bootclasspath /opt/android-sdk/platforms/android-19/android.jar src/com/example/leds-mobile/*.java
-sudo /opt/android-sdk/build-tools/26.0.1/dx --dex --output=$PROJ/bin/classes.dex $PROJ/obj
+export SDK="/usr/lib/proprietary/google-android-sdk"
+export BUILD_TOOLS="$SDK/build-tools/34.0.0"
+export PLATFORM="$SDK/platforms/android-34"
+mkdir -p build/gen build/obj build/apk
+sudo "$BUILD_TOOLS/aapt" package -f -m -J build/gen/ -S res -M AndroidManifest.xml -I "$PLATFORM/android.jar" && \
+sudo javac --release 11 -classpath "$PLATFORM/android.jar" -d build/obj build/gen/com/example/leds_mobile/R.java src/com/example/leds_mobile/MainActivity.java && \
+sudo "$BUILD_TOOLS/d8" --release --lib "$PLATFORM/android.jar" --output build/apk/ build/obj/com/example/leds_mobile/*.class && \
+sudo "$BUILD_TOOLS/aapt" package -f -M AndroidManifest.xml -S res/ -I "$PLATFORM/android.jar" -F build/LedsMobile.unsigned.apk build/apk/ && \
+sudo "$BUILD_TOOLS/zipalign" -f -p 4 build/LedsMobile.unsigned.apk build/LedsMobile.aligned.apk && \
+sudo "$BUILD_TOOLS/apksigner" sign --ks keystore.jks --ks-key-alias androidkey --ks-pass pass:android --key-pass pass:android --out build/LedsMobile.apk build/LedsMobile.aligned.apk

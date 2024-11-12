@@ -1,4 +1,4 @@
-package com.example.helloandroid;
+package com.example.leds_mobile;
 
 import android.app.Activity;
 import android.os.Bundle;
