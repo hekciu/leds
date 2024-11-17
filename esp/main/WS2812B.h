@@ -68,7 +68,6 @@ int IRAM_ATTR sendData(int gpioPin, int * data, int n) {
         transmissionDataLength += lowTimeTicks;
     }
 
-    uint64_t ticksAtCheckpoint[48];
     // do infinite loop (disable everything) and wait for checkpoints
     portDISABLE_INTERRUPTS();
     taskENTER_CRITICAL(&_spinlock);
@@ -85,7 +84,6 @@ int IRAM_ATTR sendData(int gpioPin, int * data, int n) {
                 } else {
                     REG_WRITE(GPIO_OUT_W1TS_REG, gpioPin);
                 }
-                ticksAtCheckpoint[currentCheckpoint] = cpu_hal_get_cycle_count() - startCycleCount;
                 currentCheckpoint++;
             }
         }

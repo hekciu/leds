@@ -8,9 +8,9 @@
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "driver/gpio.h"
-#include "driver/timer.h"
 
-#include "_WS2812B.h"
+#include "WS2812B.h"
+#include "bluetooth.h"
 
 #define OUTPUT_PIN GPIO_NUM_18
 #define OUTPUT_REG BIT18
