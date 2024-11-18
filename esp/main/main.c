@@ -8,6 +8,7 @@
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "driver/gpio.h"
+#include "nvs_flash.h"
 
 #include "WS2812B.h"
 #include "bluetooth.h"
@@ -20,7 +21,7 @@
 #define STACK_SIZE 4096
 
 
-void flashLedsTask (void * colorParameter) {
+void flash_leds_task (void * colorParameter) {
     int * color = (int *) colorParameter;
 
     for(;;) {
@@ -29,12 +30,13 @@ void flashLedsTask (void * colorParameter) {
         } else {
             fprintf(stderr, "error with sending data\n");
         }; 
-        printf("flash led task bitches\n");
+        printf("flash led task\n");
         vTaskDelay(100);
     }    
 
     free(color); // do I even have to place it anywhere?
 }
+
 
 void app_main(void)
 {
@@ -55,7 +57,64 @@ void app_main(void)
 
     BaseType_t xReturned;
     TaskHandle_t xHandle = NULL;
+
+    esp_err_t ret;
+
+    /* Initialize NVS. */
+    ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK( ret );
+
+    ret = esp_bt_controller_disable(); 
     
-    //xReturned = xTaskCreate(flashLedsTask, "flash_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
-    xReturned = xTaskCreate(flashLedsTask, "flash_n_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s disable controller(but what that means?) failed: %s", __func__, esp_err_to_name(ret));
+    }
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s enable controller failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ret = esp_bluedroid_init();
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s init bluetooth failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ret = esp_bluedroid_enable();
+    if (ret) {
+        ESP_LOGE(GATTS_TABLE_TAG, "%s enable bluetooth failed: %s", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    ret = esp_ble_gatts_register_callback(gatts_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gatts register error, error code = %x", ret);
+        return;
+    }
+
+    ret = esp_ble_gap_register_callback(gap_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gap register error, error code = %x", ret);
+        return;
+    }
+
+    ret = esp_ble_gatts_app_register(ESP_APP_ID);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gatts app register error, error code = %x", ret);
+        return;
+    }
+
+    esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
+    if (local_mtu_ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
+    }
+
+
+    xReturned = xTaskCreate(flash_leds_task, "flash_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
 }
