@@ -17,6 +17,7 @@
 #define OUTPUT_REG BIT18
 #define GPIO_BIT_MASK (1ULL<<OUTPUT_PIN) 
 #define N_LEDS 300
+#define FLASH_LEDS_PERIOD_MS 5000
 
 #define STACK_SIZE 4096
 
@@ -31,7 +32,7 @@ void flash_leds_task (void * colorParameter) {
             fprintf(stderr, "error with sending data\n");
         }; 
         printf("flash led task\n");
-        vTaskDelay(100);
+        vTaskDelay(FLASH_LEDS_PERIOD_MS);
     }    
 
     free(color); // do I even have to place it anywhere?
@@ -68,10 +69,11 @@ void app_main(void)
     }
     ESP_ERROR_CHECK( ret );
 
-    ret = esp_bt_controller_disable(); 
-    
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
+
     if (ret) {
-        ESP_LOGE(GATTS_TABLE_TAG, "%s disable controller(but what that means?) failed: %s", __func__, esp_err_to_name(ret));
+        ESP_LOGE(GATTS_TABLE_TAG, "%s init controller failed: %s", __func__, esp_err_to_name(ret));
     }
 
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);

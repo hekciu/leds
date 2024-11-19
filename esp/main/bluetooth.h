@@ -25,13 +25,6 @@ enum
     IDX_CHAR_A,
     IDX_CHAR_VAL_A,
     IDX_CHAR_CFG_A,
-
-    IDX_CHAR_B,
-    IDX_CHAR_VAL_B,
-
-    IDX_CHAR_C,
-    IDX_CHAR_VAL_C,
-
     HRS_IDX_NB,
 };
 
@@ -43,7 +36,7 @@ enum
 #define SAMPLE_DEVICE_NAME          "HEKCIU_LEDS_EDGE"
 #define SVC_INST_ID                 0
 
-#define INPUT_DATA_CHAR_LEN_MAX 200 // 3 values for RGB as strings:))
+#define INPUT_DATA_CHAR_LEN_MAX     200 // tbh we need only literally 3 chars (RGB) maybe make it smaller
 #define PREPARE_BUF_MAX_SIZE        1024
 #define CHAR_DECLARATION_SIZE       (sizeof(uint8_t))
 
@@ -70,8 +63,9 @@ static uint8_t raw_adv_data[] = {
     0x03, ESP_BLE_AD_TYPE_16SRV_CMPL, 0xFF, 0x00,
     /* Complete Local Name */
     0x0F, ESP_BLE_AD_TYPE_NAME_CMPL,
-    'E', 'S', 'P', '_', 'H', 'E', 'K', 'C', 'I', 'U', '_', 'L', 'E', 'D', 'S'
+    'E', 'S', 'P', '_', 'H', 'E', 'K', 'C', 'I', 'U', '_', 'L', 'E', 'D'
 };
+
 
 static uint8_t raw_scan_rsp_data[] = {
     /* Flags */
@@ -158,6 +152,18 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     switch (event) {
+        case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
+            adv_config_done &= (~ADV_CONFIG_FLAG);
+            if (adv_config_done == 0){
+                esp_ble_gap_start_advertising(&adv_params);
+            }
+            break;
+        case ESP_GAP_BLE_SCAN_RSP_DATA_RAW_SET_COMPLETE_EVT:
+            adv_config_done &= (~SCAN_RSP_CONFIG_FLAG);
+            if (adv_config_done == 0){
+                esp_ble_gap_start_advertising(&adv_params);
+            }
+            break;
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
             /* advertising start complete event to indicate advertising start successfully or failed */
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
@@ -367,7 +373,6 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 
 static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
 {
-
     /* If event is register event, store the gatts_if for each profile */
     if (event == ESP_GATTS_REG_EVT) {
         if (param->reg.status == ESP_GATT_OK) {
