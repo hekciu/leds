@@ -22,9 +22,9 @@
 enum
 {
     IDX_SVC,
-    IDX_CHAR_A,
-    IDX_CHAR_VAL_A,
-    IDX_CHAR_CFG_A,
+    IDX_CHAR_RGB,
+    IDX_CHAR_VAL_RGB,
+    IDX_CHAR_CFG_RGB,
     HRS_IDX_NB,
 };
 
@@ -45,7 +45,7 @@ enum
 
 static uint8_t adv_config_done       = 0;
 
-uint16_t heart_rate_handle_table[HRS_IDX_NB];
+uint16_t leds_color_handle_table[HRS_IDX_NB];
 
 typedef struct {
     uint8_t                 *prepare_buf;
@@ -104,7 +104,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
 					esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
-static struct gatts_profile_inst heart_rate_profile_tab[PROFILE_NUM] = {
+static struct gatts_profile_inst leds_color_profile_tab[PROFILE_NUM] = {
     [PROFILE_APP_IDX] = {
         .gatts_cb = gatts_profile_event_handler,
         .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
@@ -114,7 +114,7 @@ static struct gatts_profile_inst heart_rate_profile_tab[PROFILE_NUM] = {
 
 /* Service */
 static const uint16_t GATTS_SERVICE_UUID_TEST      = 0x00FF;
-static const uint16_t GATTS_CHAR_UUID_TEST_A       = 0xFF01;
+static const uint16_t GATTS_CHAR_UUID_TEST_RGB     = 0xFF01;
 
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
@@ -122,8 +122,8 @@ static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_C
 static const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
 static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-static const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
-static const uint8_t char_value[4]                 = {0x11, 0x22, 0x33, 0x44};
+static const uint8_t leds_color_rgb[2]             = {0x0, 0x0, 0xFF};
+static const uint8_t char_value[3]                 = {0x0, 0x0, 0xFF};
 
 /* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
@@ -134,19 +134,19 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
       sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID_TEST), (uint8_t *)&GATTS_SERVICE_UUID_TEST}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_A]     =
+    [IDX_CHAR_RGB]     =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
-    [IDX_CHAR_VAL_A] =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+    [IDX_CHAR_VAL_RGB] =
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_RGB, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       INPUT_DATA_CHAR_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
     /* Client Characteristic Configuration Descriptor */
-    [IDX_CHAR_CFG_A]  =
+    [IDX_CHAR_CFG_RGB]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
-      sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
+      sizeof(uint16_t), sizeof(leds_color_rgb), (uint8_t *)leds_color_rgb}},
 };
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
@@ -267,7 +267,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // the data length of gattc write  must be less than INPUT_DATA_CHAR_LEN_MAX.
                 ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
                 ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, param->write.value, param->write.len);
-                if (heart_rate_handle_table[IDX_CHAR_CFG_A] == param->write.handle && param->write.len == 2){
+                if (leds_color_handle_table[IDX_CHAR_CFG_RGB] == param->write.handle && param->write.len == 2){
                     uint16_t descr_value = param->write.value[1]<<8 | param->write.value[0];
                     if (descr_value == 0x0001){
                         ESP_LOGI(GATTS_TABLE_TAG, "notify enable");
@@ -277,7 +277,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                             notify_data[i] = i % 0xff;
                         }
                         //the size of notify_data[] need less than MTU size
-                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, heart_rate_handle_table[IDX_CHAR_VAL_A],
+                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, leds_color_handle_table[IDX_CHAR_VAL_RGB],
                                                 sizeof(notify_data), notify_data, false);
                     }else if (descr_value == 0x0002){
                         ESP_LOGI(GATTS_TABLE_TAG, "indicate enable");
@@ -288,11 +288,11 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                         }
 
                         // if want to change the value in server database, call:
-                        // esp_ble_gatts_set_attr_value(heart_rate_handle_table[IDX_CHAR_VAL_A], sizeof(indicate_data), indicate_data);
+                        // esp_ble_gatts_set_attr_value(leds_color_handle_table[IDX_CHAR_VAL_RGB], sizeof(indicate_data), indicate_data);
 
 
                         //the size of indicate_data[] need less than MTU size
-                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, heart_rate_handle_table[IDX_CHAR_VAL_A],
+                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, leds_color_handle_table[IDX_CHAR_VAL_RGB],
                                             sizeof(indicate_data), indicate_data, true);
                     }
                     else if (descr_value == 0x0000){
@@ -353,8 +353,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             }
             else {
                 ESP_LOGI(GATTS_TABLE_TAG, "create attribute table successfully, the number handle = %d",param->add_attr_tab.num_handle);
-                memcpy(heart_rate_handle_table, param->add_attr_tab.handles, sizeof(heart_rate_handle_table));
-                esp_ble_gatts_start_service(heart_rate_handle_table[IDX_SVC]);
+                memcpy(leds_color_handle_table, param->add_attr_tab.handles, sizeof(leds_color_handle_table));
+                esp_ble_gatts_start_service(leds_color_handle_table[IDX_SVC]);
             }
             break;
         }
@@ -376,7 +376,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     /* If event is register event, store the gatts_if for each profile */
     if (event == ESP_GATTS_REG_EVT) {
         if (param->reg.status == ESP_GATT_OK) {
-            heart_rate_profile_tab[PROFILE_APP_IDX].gatts_if = gatts_if;
+            leds_color_profile_tab[PROFILE_APP_IDX].gatts_if = gatts_if;
         } else {
             ESP_LOGE(GATTS_TABLE_TAG, "reg app failed, app_id %04x, status %d",
                     param->reg.app_id,
@@ -388,9 +388,9 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         int idx;
         for (idx = 0; idx < PROFILE_NUM; idx++) {
             /* ESP_GATT_IF_NONE, not specify a certain gatt_if, need to call every profile cb function */
-            if (gatts_if == ESP_GATT_IF_NONE || gatts_if == heart_rate_profile_tab[idx].gatts_if) {
-                if (heart_rate_profile_tab[idx].gatts_cb) {
-                    heart_rate_profile_tab[idx].gatts_cb(event, gatts_if, param);
+            if (gatts_if == ESP_GATT_IF_NONE || gatts_if == leds_color_profile_tab[idx].gatts_if) {
+                if (leds_color_profile_tab[idx].gatts_cb) {
+                    leds_color_profile_tab[idx].gatts_cb(event, gatts_if, param);
                 }
             }
         }
