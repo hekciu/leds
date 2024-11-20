@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
@@ -20,6 +21,45 @@
 #define FLASH_LEDS_PERIOD_MS 5000
 
 #define STACK_SIZE 4096
+
+
+int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
+    uint8_t inputSize = strlen(input);
+
+    const char * EXAMPLE = "0x00,0x00,0x00"; 
+    
+    if (inputSize != strlen(EXAMPLE)) {
+        ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00");
+        return 1;
+    }
+
+    char * redString = malloc(5); 
+    char * greenString = malloc(5); 
+    char * blueString = malloc(5); 
+    char * errorString = malloc(strlen(EXAMPLE) + 1);
+
+    memcpy(redString, input, 4);
+    *(redString + 4) = '\0';
+    memcpy(greenString, input + 5, 4);
+    *(greenString + 4) = '\0';
+    memcpy(blueString, input + 10, 4);
+    *(blueString + 4) = '\0';
+
+    *r = (uint8_t)strtol(redString, &errorString, 16); 
+    *g = (uint8_t)strtol(greenString, &errorString, 16); 
+    *b = (uint8_t)strtol(blueString, &errorString, 16); 
+     
+
+    free(redString);
+    free(greenString);
+    free(blueString);
+    
+    if (errorString != NULL && strlen(errorString) > 0) {
+        return 1;
+    }
+
+    return 0;
+}
 
 
 void flash_leds_task (void * colorParameter) {
