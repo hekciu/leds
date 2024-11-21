@@ -48,8 +48,6 @@ int IRAM_ATTR sendData(int gpioPin, int * data, int n) {
         fprintf(stderr, "Could not get cpu frequency, unable to send data!\n");
     };
 
-    printf("CPU frequency: %ld\n", cpuFreq);
-
     int * timerCheckpoints = malloc(48 * sizeof(int));
     int transmissionDataLength = 0;
 

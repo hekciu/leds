@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <errno.h>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/FreeRTOSConfig.h"
@@ -23,12 +24,26 @@
 #define STACK_SIZE 4096
 
 
+static long parseLong(const char *str, int * code) {
+    errno = 0;
+    char *temp;
+    long val = strtol(str, &temp, 16);
+
+    if (temp == str || *temp != '\0' || ((val == LONG_MIN || val == LONG_MAX) && errno == ERANGE)) {
+        fprintf(stderr, "Could not convert '%s' to long and leftover string is: '%s'\n", str, temp);
+        *code = 1;
+    }
+
+    return val;
+}
+
 int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     uint8_t inputSize = strlen(input);
 
     const char * EXAMPLE = "0x00,0x00,0x00"; 
+    const int correctDataSize = strlen(EXAMPLE) + 1;
     
-    if (inputSize != strlen(EXAMPLE)) {
+    if (inputSize != correctDataSize) {
         ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00");
         return 1;
     }
@@ -36,7 +51,7 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     char * redString = malloc(5); 
     char * greenString = malloc(5); 
     char * blueString = malloc(5); 
-    char * errorString = malloc(strlen(EXAMPLE) + 1);
+    char * errorString;
 
     memcpy(redString, input, 4);
     *(redString + 4) = '\0';
@@ -45,16 +60,17 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     memcpy(blueString, input + 10, 4);
     *(blueString + 4) = '\0';
 
-    *r = (uint8_t)strtol(redString, &errorString, 16); 
-    *g = (uint8_t)strtol(greenString, &errorString, 16); 
-    *b = (uint8_t)strtol(blueString, &errorString, 16); 
-     
+    int code = 0;
+    
+    *r = (uint8_t)parseLong(redString, &code); 
+    *g = (uint8_t)parseLong(greenString, &code);
+    *b = (uint8_t)parseLong(blueString, &code);
 
     free(redString);
     free(greenString);
     free(blueString);
-    
-    if (strlen(errorString) > 0) {
+
+    if (code != 0) {
         return 1;
     }
 
@@ -63,24 +79,36 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
 
 
 void flash_leds_task (void * _) {
-
-    int * color = (int *)_;
     for(;;) {
+        vTaskDelay(FLASH_LEDS_PERIOD_MS);
+
         char * colorString;
-        // define GLOBALLY rgb string length
+
         esp_gatt_status_t status = esp_ble_gatts_get_attr_value(leds_color_handle_table[IDX_CHAR_VAL_RGB], &RGB_STRING_SIZE, (const uint8_t **)&colorString);
 
-        printf("dupa: %s\n", colorString);
-        if(sendData(OUTPUT_REG, color, N_LEDS) == 0) {
+        if (status != ESP_OK) {
+            ESP_LOGE(GATTS_TABLE_TAG, "esp function esp_ble_gatts_get_attr_value failed with code: %d, skipping flash_leds_task", status);   
+            continue;
+        }
+
+        uint8_t R, G, B;
+        if (parse_rgb_string(colorString, &R, &G, &B) != 0) {
+            ESP_LOGE(GATTS_TABLE_TAG, "parse_rgb_string failed, skipping flash_leds_task");
+            continue;
+        }
+
+        int * color = malloc(24 * sizeof(int));
+        createDataPackage(R, G, B, color);
+
+        printf("R: %d, G: %d, B: %d\n", R, G, B);
+        if (sendData(OUTPUT_REG, color, N_LEDS) == 0) {
             printf("data sent successfully\n");     
         } else {
             fprintf(stderr, "error with sending data\n");
         }; 
-        printf("flash led task\n");
-        vTaskDelay(FLASH_LEDS_PERIOD_MS);
+        free(color);
     }    
 
-    free(color); // do I even have to place it anywhere?
 }
 
 
@@ -97,10 +125,8 @@ void app_main(void)
     ioConf.pin_bit_mask = GPIO_BIT_MASK;
     gpio_config(&ioConf);
 
-    int * output = malloc(24 * sizeof(int));
-    printf("flashin red on pin: %d\n", OUTPUT_PIN);
-    createDataPackage(255, 255, 255, output); 
-
+    printf("using pin: %d\n", OUTPUT_PIN);
+     
     BaseType_t xReturned;
     TaskHandle_t xHandle = NULL;
 
@@ -163,5 +189,5 @@ void app_main(void)
     }
 
 
-    xReturned = xTaskCreate(flash_leds_task, "flash_leds_task", STACK_SIZE, (void *) output, configMAX_PRIORITIES - 1, &xHandle);
+    xReturned = xTaskCreate(flash_leds_task, "flash_leds_task", STACK_SIZE, NULL, configMAX_PRIORITIES - 1, &xHandle);
 }
