@@ -18,7 +18,7 @@
 #define OUTPUT_REG BIT18
 #define GPIO_BIT_MASK (1ULL<<OUTPUT_PIN) 
 #define N_LEDS 300
-#define FLASH_LEDS_PERIOD_MS 5000
+#define FLASH_LEDS_PERIOD_MS 200
 
 #define STACK_SIZE 4096
 
@@ -54,7 +54,7 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     free(greenString);
     free(blueString);
     
-    if (errorString != NULL && strlen(errorString) > 0) {
+    if (strlen(errorString) > 0) {
         return 1;
     }
 
@@ -62,10 +62,15 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
 }
 
 
-void flash_leds_task (void * colorParameter) {
-    int * color = (int *) colorParameter;
+void flash_leds_task (void * _) {
 
+    int * color = (int *)_;
     for(;;) {
+        char * colorString;
+        // define GLOBALLY rgb string length
+        esp_gatt_status_t status = esp_ble_gatts_get_attr_value(leds_color_handle_table[IDX_CHAR_VAL_RGB], &RGB_STRING_SIZE, (const uint8_t **)&colorString);
+
+        printf("dupa: %s\n", colorString);
         if(sendData(OUTPUT_REG, color, N_LEDS) == 0) {
             printf("data sent successfully\n");     
         } else {
