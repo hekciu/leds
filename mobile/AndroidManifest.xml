@@ -1,5 +1,9 @@
 <?xml version='1.0'?>
 <manifest xmlns:a='http://schemas.android.com/apk/res/android' package='com.example.leds_mobile' a:versionCode='0' a:versionName='0'>
+    <uses-permission a:name='android.permission.BLUETOOTH_SCAN'/>
+    <uses-permission a:name='android.permission.BLUETOOTH_CONNECT'/>
+    <uses-sdk a:minSdkVersion='5'/>
+    <uses-feature a:name="android.hardware.bluetooth_le" a:required="true"/>
     <application a:label='Bluetooth controlled led strip'>
         <activity a:name='com.example.leds_mobile.MainActivity'>
              <intent-filter>
@@ -7,5 +11,11 @@
                 <action a:name='android.intent.action.MAIN'/>
              </intent-filter>
         </activity>
+        <service
+            a:name='com.example.leds_mobile.BluetoothService'
+            a:enabled='true'
+            a:exported='false'
+            a:label='Bluetooth Service' >
+        </service>
     </application>
 </manifest>

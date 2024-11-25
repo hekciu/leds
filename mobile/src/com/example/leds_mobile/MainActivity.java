@@ -6,11 +6,14 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.view.View;
 import android.graphics.Color;
+import android.content.Intent;
+
 
 public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         LinearLayout backgroundLayout = findViewById(R.id.backgroundLayout);
 
@@ -52,5 +55,7 @@ public class MainActivity extends Activity {
         });
 
         backgroundLayout.setBackgroundColor(backgroundColor);
+
+        startService(new Intent(MainActivity.this, BluetoothService.class));
     }
 }
