@@ -4,7 +4,7 @@
     <uses-permission a:name='android.permission.BLUETOOTH_CONNECT'/>
     <uses-sdk a:minSdkVersion='5'/>
     <uses-feature a:name="android.hardware.bluetooth_le" a:required="true"/>
-    <application a:label='Bluetooth controlled led strip'>
+    <application a:label='Bluetooth controlled led strip' a:debuggable="true">
         <activity a:name='com.example.leds_mobile.MainActivity'>
              <intent-filter>
                 <category a:name='android.intent.category.LAUNCHER'/>

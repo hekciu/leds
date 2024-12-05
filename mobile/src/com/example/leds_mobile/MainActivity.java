@@ -7,9 +7,13 @@ import android.widget.LinearLayout;
 import android.view.View;
 import android.graphics.Color;
 import android.content.Intent;
+import android.util.Log;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothAdapter;
 
 
 public class MainActivity extends Activity {
+    private static final String LOG_TAG = "hekciu_leds";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,25 +30,29 @@ public class MainActivity extends Activity {
         Button buttonRed = findViewById(R.id.buttonRed);
         buttonRed.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-               backgroundLayout.setBackgroundColor(red);
+                Log.d(LOG_TAG, "RED"); 
+                backgroundLayout.setBackgroundColor(red);
             }
         });
         Button buttonBlue = findViewById(R.id.buttonBlue);
         buttonBlue.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-               backgroundLayout.setBackgroundColor(blue);
+                Log.d(LOG_TAG, "BLUE"); 
+                backgroundLayout.setBackgroundColor(blue);
             }
         });
         Button buttonGreen = findViewById(R.id.buttonGreen);
         buttonGreen.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-               backgroundLayout.setBackgroundColor(green);
+                Log.d(LOG_TAG, "GREEN"); 
+                backgroundLayout.setBackgroundColor(green);
             }
         });
         Button buttonPurple = findViewById(R.id.buttonPurple);
         buttonPurple.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-               backgroundLayout.setBackgroundColor(purple);
+                Log.d(LOG_TAG, "PURPLE"); 
+                backgroundLayout.setBackgroundColor(purple);
             }
         });
         Button buttonReset = findViewById(R.id.buttonReset);
@@ -55,6 +63,25 @@ public class MainActivity extends Activity {
         });
 
         backgroundLayout.setBackgroundColor(backgroundColor);
+
+        BluetoothManager manager = getSystemService(BluetoothManager.class);
+        BluetoothAdapter adapter = manager.getAdapter();
+
+        if (adapter == null) {
+            Log.d(LOG_TAG, "Could not get bluetooth adapter");
+            return;
+        }
+
+        Log.d(LOG_TAG, "Successfully got bluetooth adapter");
+
+        int REQUEST_ENABLE_BT = 0;
+
+        if (!adapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(adapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            onActivityResult(REQUEST_ENABLE_BT
+        }
+
 
         startService(new Intent(MainActivity.this, BluetoothService.class));
     }
