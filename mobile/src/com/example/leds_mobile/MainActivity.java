@@ -14,6 +14,8 @@ import android.bluetooth.BluetoothAdapter;
 
 public class MainActivity extends Activity {
     private static final String LOG_TAG = "hekciu_leds";
+    private static final int REQUEST_ENABLE_BT = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,15 +76,20 @@ public class MainActivity extends Activity {
 
         Log.d(LOG_TAG, "Successfully got bluetooth adapter");
 
-        int REQUEST_ENABLE_BT = 0;
-
         if (!adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(adapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            onActivityResult(REQUEST_ENABLE_BT
+        } else {
+            startService(new Intent(MainActivity.this, BluetoothService.class));
         }
+    }
 
-
-        startService(new Intent(MainActivity.this, BluetoothService.class));
+    @Override 
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // idk why it's -1 on user's acceptance but it is what it is
+        if (requestCode == REQUEST_ENABLE_BT && resultCode == -1) {
+            Log.d(LOG_TAG, "Successfully enabled bluetooth");
+            startService(new Intent(MainActivity.this, BluetoothService.class));
+        }
     }
 }
