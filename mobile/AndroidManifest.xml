@@ -2,6 +2,9 @@
 <manifest xmlns:a='http://schemas.android.com/apk/res/android' package='com.example.leds_mobile' a:versionCode='0' a:versionName='0'>
     <uses-permission a:name='android.permission.BLUETOOTH_SCAN'/>
     <uses-permission a:name='android.permission.BLUETOOTH_CONNECT'/>
+    <uses-permission a:name='android.permission.BLUETOOTH'/>
+    <uses-permission a:name='android.permission.BLUETOOTH_ADMIN'/>
+    <uses-permission a:name='android.permission.ACCESS_COARSE_LOCATION'/>
     <uses-sdk a:minSdkVersion='5'/>
     <uses-feature a:name="android.hardware.bluetooth_le" a:required="true"/>
     <application a:label='Bluetooth controlled led strip' a:debuggable="true">

@@ -15,10 +15,16 @@ import android.bluetooth.BluetoothAdapter;
 public class MainActivity extends Activity {
     private static final String LOG_TAG = "hekciu_leds";
     private static final int REQUEST_ENABLE_BT = 0;
+    private BluetoothManager manager;
+    private BluetoothAdapter adapter;
+    private Intent startBluetoothServiceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.manager = getSystemService(BluetoothManager.class);
+        this.adapter = manager.getAdapter();
+        this.startBluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
 
         setContentView(R.layout.activity_main);
         LinearLayout backgroundLayout = findViewById(R.id.backgroundLayout);
@@ -66,21 +72,18 @@ public class MainActivity extends Activity {
 
         backgroundLayout.setBackgroundColor(backgroundColor);
 
-        BluetoothManager manager = getSystemService(BluetoothManager.class);
-        BluetoothAdapter adapter = manager.getAdapter();
-
-        if (adapter == null) {
+        if (this.adapter == null) {
             Log.d(LOG_TAG, "Could not get bluetooth adapter");
             return;
         }
 
         Log.d(LOG_TAG, "Successfully got bluetooth adapter");
 
-        if (!adapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(adapter.ACTION_REQUEST_ENABLE);
+        if (!this.adapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(this.adapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         } else {
-            startService(new Intent(MainActivity.this, BluetoothService.class));
+            startService(this.startBluetoothServiceIntent);
         }
     }
 
@@ -89,7 +92,7 @@ public class MainActivity extends Activity {
         // idk why it's -1 on user's acceptance but it is what it is
         if (requestCode == REQUEST_ENABLE_BT && resultCode == -1) {
             Log.d(LOG_TAG, "Successfully enabled bluetooth");
-            startService(new Intent(MainActivity.this, BluetoothService.class));
+            startService(this.startBluetoothServiceIntent);
         }
     }
 }
