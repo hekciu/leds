@@ -18,7 +18,7 @@ public class BluetoothService extends Service {
     private BluetoothManager manager;
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
-    private final String espMacAddress = Secrets.ESP_MAC_ADDRESS;
+    private String espMacAddress;
     private static final String LOG_TAG = "hekciu_leds";
 
     private void _handleScanResult(ScanResult result) {
@@ -38,6 +38,8 @@ public class BluetoothService extends Service {
         this.manager = getSystemService(BluetoothManager.class);
         this.adapter = manager.getAdapter();
         this.scanner = this.adapter.getBluetoothLeScanner();
+
+        this.espMacAddress = Secrets.getAddress();
 
         BluetoothService serviceInstance = this; 
 

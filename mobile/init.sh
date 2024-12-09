@@ -11,3 +11,6 @@ mkdir "$SDK/platforms"
 unzip -q platform-34-ext7_r02.zip -d "$SDK/platforms"
 curl -LO https://dl.google.com/android/repository/platform-tools_r34.0.5-linux.zip
 unzip -q platform-tools_r34.0.5-linux.zip -d "$SDK"
+
+echo "creating src/com/example/leds_mobile/Secrets.java file, you need to fill it with mac address of ESP"
+cp src/com/example/leds_mobile/Secrets.java.template src/com/example/leds_mobile/Secrets.java
