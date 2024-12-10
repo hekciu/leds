@@ -14,7 +14,8 @@
 
 ## Building mobile app(mobile/)
 - sudo ./init.sh
+#### Fill src/com/example/leds_mobile/Secrets.java with esp32 mac address
 - sudo ./build.sh
 ### connect phone with developer tools & USB debugging enabled
 - ./run.sh
-
+- ./monitor.sh

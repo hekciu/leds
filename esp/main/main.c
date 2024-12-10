@@ -44,7 +44,7 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     const int correctDataSize = strlen(EXAMPLE) + 1;
     
     if (inputSize != correctDataSize) {
-        ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00");
+        ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00 got: %s", input);
         return 1;
     }
 
