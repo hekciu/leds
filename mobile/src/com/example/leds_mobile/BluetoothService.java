@@ -12,8 +12,11 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.Handler;
 import android.util.Log;
 
 
@@ -22,8 +25,12 @@ public class BluetoothService extends Service {
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
     private String espMacAddress;
-    private BluetoothGatt bluetoothGatt;
+    private String rgbCharacteristicUuid = "0xFF01";
+    private BluetoothGatt bluetoothGatt = null;
+    private BluetoothGattCharacteristic rgbCharacteristic = null;
+    private String rgbString = "0x00,0x00,0xFF";
     private static final String LOG_TAG = "hekciu_leds";
+    private static final int WRITE_INTERVAL_MS = 100;
 
     private ScanCallback scanCallback;
 
@@ -38,13 +45,13 @@ public class BluetoothService extends Service {
 
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
-                serviceInstance._handleScanResult(result);
+                serviceInstance.handleScanResult(result);
             }
         
             @Override
             public void onBatchScanResults(List<ScanResult> results) {
                 for (ScanResult result : results) {
-                    serviceInstance._handleScanResult(result);
+                    serviceInstance.handleScanResult(result);
                 }
             }
         }; 
@@ -52,7 +59,35 @@ public class BluetoothService extends Service {
         return scanCallback;
     }
 
-    private void _handleScanResult(ScanResult result) {
+    private void setRgbUpdateInterval() {
+        Handler handler = new Handler();
+    
+        BluetoothService serviceInstance = this;
+
+        Runnable updateData = new Runnable(){
+            @Override
+            public void run() {
+                if (serviceInstance.rgbCharacteristic == null || serviceInstance.bluetoothGatt == null) {
+                    return; 
+                }
+
+                try {
+                    Log.d(LOG_TAG, "writing to esp, rgb string: " + serviceInstance.rgbString);
+
+                    serviceInstance.bluetoothGatt.writeCharacteristic(serviceInstance.rgbCharacteristic, serviceInstance.rgbString.getBytes(), BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+                } catch (Exception e) {
+                    Log.d(LOG_TAG, "an error occured while writing rgb string bytes to characteristic");
+                    Log.d(LOG_TAG, "error details: "+e.toString());
+                }
+
+                handler.postDelayed(this, WRITE_INTERVAL_MS);
+            }
+        };
+
+        handler.post(updateData);
+    }
+
+    private void handleScanResult(ScanResult result) {
         BluetoothDevice device = result.getDevice();
 
         Log.d(LOG_TAG, "Found device with address: " + device.getAddress());
@@ -78,6 +113,26 @@ public class BluetoothService extends Service {
                     serviceInstance.scanner.startScan(serviceInstance.scanCallback);
                 }
             }
+
+            @Override 
+            public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                Log.d(LOG_TAG, "services discovered");
+
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    List<BluetoothGattService> services = gatt.getServices();
+                    for (BluetoothGattService service : services) {
+                        List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+                        for (BluetoothGattCharacteristic characteristic : characteristics) { 
+                            Log.d(LOG_TAG, "got: " + characteristic.getUuid() + " wanted: " + serviceInstance.rgbCharacteristicUuid);
+
+                            if (characteristic.getUuid().equals(serviceInstance.rgbCharacteristicUuid)) {
+                                Log.d(LOG_TAG, "found characteristic matching rgbCharacteristic uuid");
+                                serviceInstance.rgbCharacteristic = characteristic;
+                            }
+                        }
+                    }
+                }
+            }
         }, 2); // TRANSPORT_LE == 2
 
     }
@@ -93,6 +148,8 @@ public class BluetoothService extends Service {
         this.espMacAddress = Secrets.getAddress();
 
         this.scanner.startScan(this.scanCallback);
+
+        this.setRgbUpdateInterval();
 
         return START_STICKY;
     }
