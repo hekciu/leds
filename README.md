@@ -3,7 +3,7 @@
 - WS2812B led strip
 - Mobile phone with android
 
-## Building esp32 application (debian)
+## Building esp32 application (esp/)
 ### First time on new machine:
 - Follow these instructions: https://github.com/hekciu/esp32-probe
 

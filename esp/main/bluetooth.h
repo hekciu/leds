@@ -5,7 +5,7 @@
     GATT client - a device which accesses data on the remote GATT server via read, write, notify, or indicate operations
     GATT server - a device which stores data locally and provides data access methods to a remote GATT client
 
-    All uuid's are currently copied from espressif example (as well as most of the code xdd)
+    All uuid's are currently copied from espressif example (as well as most of the code)
 */
 
 #include <string.h>

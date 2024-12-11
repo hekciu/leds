@@ -24,13 +24,14 @@ public class BluetoothService extends Service {
     private BluetoothManager manager;
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
+    private Handler handler;
     private String espMacAddress;
-    private String rgbCharacteristicUuid = "0xFF01";
+    private String rgbCharacteristicUuid = "0000ff01-0000-1000-8000-00805f9b34fb";
     private BluetoothGatt bluetoothGatt = null;
     private BluetoothGattCharacteristic rgbCharacteristic = null;
     private String rgbString = "0x00,0x00,0xFF";
     private static final String LOG_TAG = "hekciu_leds";
-    private static final int WRITE_INTERVAL_MS = 100;
+    private static final int WRITE_INTERVAL_MS = 1;
 
     private ScanCallback scanCallback;
 
@@ -59,32 +60,24 @@ public class BluetoothService extends Service {
         return scanCallback;
     }
 
-    private void setRgbUpdateInterval() {
-        Handler handler = new Handler();
-    
-        BluetoothService serviceInstance = this;
+    private void sendData() {
+        if (this.rgbCharacteristic == null || this.bluetoothGatt == null) {
+            Log.d(LOG_TAG, "could not sendData - rgbCharacteristic or bluetoothGatt is null");
+            return; 
+        }
 
-        Runnable updateData = new Runnable(){
-            @Override
-            public void run() {
-                if (serviceInstance.rgbCharacteristic == null || serviceInstance.bluetoothGatt == null) {
-                    return; 
-                }
+        try {
+            Log.d(LOG_TAG, "writing to esp, rgb string: " + this.rgbString);
 
-                try {
-                    Log.d(LOG_TAG, "writing to esp, rgb string: " + serviceInstance.rgbString);
+            this.rgbCharacteristic.setValue(this.rgbString);
 
-                    serviceInstance.bluetoothGatt.writeCharacteristic(serviceInstance.rgbCharacteristic, serviceInstance.rgbString.getBytes(), BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-                } catch (Exception e) {
-                    Log.d(LOG_TAG, "an error occured while writing rgb string bytes to characteristic");
-                    Log.d(LOG_TAG, "error details: "+e.toString());
-                }
+            this.bluetoothGatt.writeCharacteristic(this.rgbCharacteristic);
 
-                handler.postDelayed(this, WRITE_INTERVAL_MS);
-            }
-        };
-
-        handler.post(updateData);
+            Log.d(LOG_TAG, "data written");
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "an error occured while writing rgb string bytes to characteristic");
+            Log.d(LOG_TAG, "error details: "+e.toString());
+        }
     }
 
     private void handleScanResult(ScanResult result) {
@@ -123,18 +116,17 @@ public class BluetoothService extends Service {
                     for (BluetoothGattService service : services) {
                         List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
                         for (BluetoothGattCharacteristic characteristic : characteristics) { 
-                            Log.d(LOG_TAG, "got: " + characteristic.getUuid() + " wanted: " + serviceInstance.rgbCharacteristicUuid);
-
-                            if (characteristic.getUuid().equals(serviceInstance.rgbCharacteristicUuid)) {
+                            if (characteristic.getUuid().toString().equals(serviceInstance.rgbCharacteristicUuid)) {
                                 Log.d(LOG_TAG, "found characteristic matching rgbCharacteristic uuid");
                                 serviceInstance.rgbCharacteristic = characteristic;
+
+                                serviceInstance.sendData();
                             }
                         }
                     }
                 }
             }
         }, 2); // TRANSPORT_LE == 2
-
     }
 
     @Override
@@ -148,8 +140,6 @@ public class BluetoothService extends Service {
         this.espMacAddress = Secrets.getAddress();
 
         this.scanner.startScan(this.scanCallback);
-
-        this.setRgbUpdateInterval();
 
         return START_STICKY;
     }
