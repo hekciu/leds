@@ -10,6 +10,10 @@ import android.content.Intent;
 import android.util.Log;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ServiceConnection;
+import android.content.ComponentName;
+import android.content.Context;
+import android.os.IBinder;
 
 
 public class MainActivity extends Activity {
@@ -17,14 +21,36 @@ public class MainActivity extends Activity {
     private static final int REQUEST_ENABLE_BT = 0;
     private BluetoothManager manager;
     private BluetoothAdapter adapter;
-    private Intent startBluetoothServiceIntent;
+    private Intent bindBluetoothServiceIntent;
+
+    BluetoothService bluetoothService = null;
+    
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder binder) {
+            bluetoothService = ((BluetoothService.LocalBinder)binder).getService();
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            bluetoothService = null;
+        }
+    };
+
+    public void changeColor(int r, int g, int b) {
+        if (this.bluetoothService == null) {
+            Log.d(LOG_TAG, "tried to send message to service, but this.bluetoothService is null");
+            return;
+        }
+
+        this.bluetoothService.setRgbData(r, g, b);
+        this.bluetoothService.sendData();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.manager = getSystemService(BluetoothManager.class);
         this.adapter = manager.getAdapter();
-        this.startBluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
+        this.bindBluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
 
         setContentView(R.layout.activity_main);
         LinearLayout backgroundLayout = findViewById(R.id.backgroundLayout);
@@ -39,6 +65,7 @@ public class MainActivity extends Activity {
         buttonRed.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.d(LOG_TAG, "RED"); 
+                changeColor(255, 0, 0);
                 backgroundLayout.setBackgroundColor(red);
             }
         });
@@ -46,6 +73,7 @@ public class MainActivity extends Activity {
         buttonBlue.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.d(LOG_TAG, "BLUE"); 
+                changeColor(0, 0, 255);
                 backgroundLayout.setBackgroundColor(blue);
             }
         });
@@ -53,6 +81,7 @@ public class MainActivity extends Activity {
         buttonGreen.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.d(LOG_TAG, "GREEN"); 
+                changeColor(0, 255, 0);
                 backgroundLayout.setBackgroundColor(green);
             }
         });
@@ -60,6 +89,7 @@ public class MainActivity extends Activity {
         buttonPurple.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.d(LOG_TAG, "PURPLE"); 
+                changeColor(255, 0, 255);
                 backgroundLayout.setBackgroundColor(purple);
             }
         });
@@ -83,7 +113,7 @@ public class MainActivity extends Activity {
             Intent enableBtIntent = new Intent(this.adapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         } else {
-            startService(this.startBluetoothServiceIntent);
+            bindService(this.bindBluetoothServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
         }
     }
 
@@ -92,7 +122,7 @@ public class MainActivity extends Activity {
         // idk why it's -1 on user's acceptance but it is what it is
         if (requestCode == REQUEST_ENABLE_BT && resultCode == -1) {
             Log.d(LOG_TAG, "Successfully enabled bluetooth");
-            startService(this.startBluetoothServiceIntent);
+            bindService(this.bindBluetoothServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
         }
     }
 }

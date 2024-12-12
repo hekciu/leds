@@ -16,6 +16,7 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.Binder;
 import android.os.Handler;
 import android.util.Log;
 
@@ -29,9 +30,32 @@ public class BluetoothService extends Service {
     private String rgbCharacteristicUuid = "0000ff01-0000-1000-8000-00805f9b34fb";
     private BluetoothGatt bluetoothGatt = null;
     private BluetoothGattCharacteristic rgbCharacteristic = null;
-    private String rgbString = "0x00,0x00,0xFF";
+    private String rgbString;
     private static final String LOG_TAG = "hekciu_leds";
-    private static final int WRITE_INTERVAL_MS = 1;
+    
+    private final IBinder binder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        public BluetoothService getService() {
+            return BluetoothService.this;
+        }
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d(LOG_TAG, "Starting BluetoothService"); 
+        this.manager = getSystemService(BluetoothManager.class);
+        this.adapter = manager.getAdapter();
+        this.scanner = this.adapter.getBluetoothLeScanner();
+        this.scanCallback = this.getScanCallback();
+        this.setRgbData(0, 0, 255);
+
+        this.espMacAddress = Secrets.getAddress();
+
+        this.scanner.startScan(this.scanCallback);
+
+        return binder;
+    }
 
     private ScanCallback scanCallback;
 
@@ -60,7 +84,15 @@ public class BluetoothService extends Service {
         return scanCallback;
     }
 
-    private void sendData() {
+    public void setRgbData(int r, int g, int b) {
+        String rStr = r < 10 ? "0x0"+Integer.toString(r, 16) : "0x"+Integer.toString(r, 16);
+        String gStr = g < 10 ? "0x0"+Integer.toString(g, 16) : "0x"+Integer.toString(g, 16);
+        String bStr = b < 10 ? "0x0"+Integer.toString(b, 16) : "0x"+Integer.toString(b, 16);
+
+        this.rgbString = rStr+","+gStr+","+bStr;
+    }
+
+    public void sendData() {
         if (this.rgbCharacteristic == null || this.bluetoothGatt == null) {
             Log.d(LOG_TAG, "could not sendData - rgbCharacteristic or bluetoothGatt is null");
             return; 
@@ -127,26 +159,6 @@ public class BluetoothService extends Service {
                 }
             }
         }, 2); // TRANSPORT_LE == 2
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(LOG_TAG, "Starting BluetoothService"); 
-        this.manager = getSystemService(BluetoothManager.class);
-        this.adapter = manager.getAdapter();
-        this.scanner = this.adapter.getBluetoothLeScanner();
-        this.scanCallback = this.getScanCallback();
-
-        this.espMacAddress = Secrets.getAddress();
-
-        this.scanner.startScan(this.scanCallback);
-
-        return START_STICKY;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 }
 
