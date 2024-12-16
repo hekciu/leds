@@ -20,7 +20,7 @@ All building scripts were written and tested on debian.
 
 ### If you have environment set up
 - source ./init.sh
-- idf.py -p PORT flash monitor # replace PORT with real one from /dev/
+- idf.py -p PORT build flash monitor # replace PORT with real one from /dev/
 
 ## Building mobile app (mobile/)
 ### First time on new machine:
