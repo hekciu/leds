@@ -5,10 +5,14 @@ All building scripts were written and tested on debian.
 
 <img src="/img/application_interface.jpg" alt="" width="200"/>
 
-## Hardware:
+## Hardware used:
 - Esp32-s3-WROOM-1 board
 - WS2812B led strip
 - Mobile phone with android
+- Device with GNU/Linux OS for building and flashing both applications
+
+## Circuts scheme:
+#### TBD
 
 ## Building esp32 application (esp/)
 ### First time on new machine:
