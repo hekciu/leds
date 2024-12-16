@@ -1,8 +1,9 @@
 This repository contains both code that should be run on an esp32 microcontroller and code for building android application.
 All building scripts were written and tested on debian.
 
-## Application UI:
-![Bluetooth controller led strip](/img/application_interface.jpg?raw=true "")
+## Mobile app looks like that:
+
+<img src="/img/application_interface.jpg" alt="" width="200"/>
 
 ## Hardware:
 - Esp32-s3-WROOM-1 board
