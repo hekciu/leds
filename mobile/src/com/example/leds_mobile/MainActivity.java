@@ -3,6 +3,7 @@ package com.example.leds_mobile;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.view.View;
 import android.graphics.Color;
@@ -55,10 +56,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         LinearLayout backgroundLayout = findViewById(R.id.backgroundLayout);
 
-        int red = 0x50FF0000;
-        int green = 0x5000FF00;
-        int blue = 0x500000FF;
-        int purple = 0x50FF00FF;
+        int red = 0xFFFF0000;
+        int green = 0xFF00FF00;
+        int blue = 0xFF0000FF;
         int backgroundColor = 0x50808080;
 
         Button buttonRed = findViewById(R.id.buttonRed);
@@ -85,17 +85,47 @@ public class MainActivity extends Activity {
                 backgroundLayout.setBackgroundColor(green);
             }
         });
-        Button buttonPurple = findViewById(R.id.buttonPurple);
-        buttonPurple.setOnClickListener(new View.OnClickListener() {
+
+        EditText inputRed = findViewById(R.id.customInputRed);
+        EditText inputGreen = findViewById(R.id.customInputGreen);
+        EditText inputBlue = findViewById(R.id.customInputBlue);
+        Button buttonAcceptCustom = findViewById(R.id.buttonAcceptCustom);
+        buttonAcceptCustom.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Log.d(LOG_TAG, "PURPLE"); 
-                changeColor(255, 0, 255);
-                backgroundLayout.setBackgroundColor(purple);
+                int red = 0;
+                int green = 0;
+                int blue = 0;
+
+                try {
+                    red = Integer.valueOf(inputRed.getText().toString());
+                    green = Integer.valueOf(inputGreen.getText().toString());
+                    blue = Integer.valueOf(inputBlue.getText().toString());
+                } catch (Exception e) {
+                    Log.d(LOG_TAG, "Got error: "+e.getMessage());
+                }
+
+                red = red > 255 ? 255 : red;
+                green = green > 255 ? 255 : green;
+                blue = blue > 255 ? 255 : blue;
+
+                red = red < 0 ? 0 : red;
+                green = green < 0 ? 0 : green;
+                blue = blue < 0 ? 0 : blue;
+
+                Log.d(LOG_TAG, "CUSTOM: "+red+", "+green+", "+blue); 
+                int color = (255 & 0xff) << 24 | (red & 0xff) << 16 | (green & 0xff) << 8 | (blue & 0xff);
+                // TODO: set color as encoded integer via bluetooth 
+
+                changeColor(red, green, blue);
+                backgroundLayout.setBackgroundColor(color);
             }
         });
+
         Button buttonReset = findViewById(R.id.buttonReset);
         buttonReset.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                Log.d(LOG_TAG, "reset");
+                changeColor(0, 0, 0);
                backgroundLayout.setBackgroundColor(backgroundColor);
             }
         });

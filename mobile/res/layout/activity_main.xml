@@ -22,16 +22,38 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         android:text="Blue"/>  
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/backgroundLayout"
+        android:gravity="center">
+        <EditText
+            android:id="@+id/customInputRed"
+            android:layout_height="wrap_content"
+            android:layout_width="100dp"
+            android:inputType="number"/>
+        <EditText
+            android:id="@+id/customInputGreen"
+            android:layout_height="wrap_content"
+            android:layout_width="100dp"
+            android:inputType="number"/>
+        <EditText
+            android:id="@+id/customInputBlue"
+            android:layout_height="wrap_content"
+            android:layout_width="100dp"
+            android:inputType="number"/>
+    </LinearLayout>
     <Button
-        android:id="@+id/buttonPurple"
+        android:id="@+id/buttonAcceptCustom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:text="Purple"/>  
+        android:text="Accept custom"/>
     <Button
         android:id="@+id/buttonReset"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:text="Off"/>  
+        android:text="Off"/>
 </LinearLayout>
