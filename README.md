@@ -27,6 +27,7 @@ All building scripts were written and tested on debian.
 - sudo ./init.sh
 
 ### If you have environment set up
+- cp src/com/example/leds_mobile/Secrets.java.template src/com/example/leds_mobile/Secrets.java
 #### Fill src/com/example/leds_mobile/Secrets.java with esp32 mac address
 - sudo ./build.sh
 
