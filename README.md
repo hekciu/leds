@@ -12,7 +12,7 @@ All building scripts were written and tested on debian.
 - Device with GNU/Linux OS for building and flashing both applications
 
 ## Terrible paint circuits scheme:
-<img src="/img/esp_leds_scheme.png" alt="" width="200"/>
+<img src="/img/esp_leds_scheme.png" alt="" width="700"/>
 
 ## Building esp32 application (esp/)
 ### First time on new machine:
