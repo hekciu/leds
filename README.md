@@ -11,8 +11,8 @@ All building scripts were written and tested on debian.
 - Mobile phone with android
 - Device with GNU/Linux OS for building and flashing both applications
 
-## Circuts scheme:
-#### TBD
+## Terrible paint circuits scheme:
+<img src="/img/esp_leds_scheme.png" alt="" width="200"/>
 
 ## Building esp32 application (esp/)
 ### First time on new machine:

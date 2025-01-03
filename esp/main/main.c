@@ -24,6 +24,8 @@
 #define STACK_SIZE 4096
 
 
+uint8_t rgb[3] = { 0x00, 0xFF, 0x00 };
+
 static long parseLong(const char *str, int * code) {
     errno = 0;
     char *temp;
