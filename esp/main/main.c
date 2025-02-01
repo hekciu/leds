@@ -23,8 +23,9 @@
 
 #define STACK_SIZE 4096
 
+#define NVS_RGB_VAR_NAME "RGB_VALUE"
+#define NVS_RGB_NAMESPACE "RGB_NAMESPACE"
 
-uint8_t rgb[3] = { 0x00, 0xFF, 0x00 };
 
 static long parseLong(const char *str, int * code) {
     errno = 0;
@@ -43,10 +44,10 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
     uint8_t inputSize = strlen(input);
 
     const char * EXAMPLE = "0x00,0x00,0x00"; 
-    const int correctDataSize = strlen(EXAMPLE) + 1;
+    const int correctDataSize = strlen(EXAMPLE);
     
     if (inputSize != correctDataSize) {
-        ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00 got: %s", input);
+        ESP_LOGE(GATTS_TABLE_TAG, "Parsing rgb string failed, correct format is: 0x00,0x00,0x00 got: %s\n size: %d vs %d", input, correctDataSize, inputSize);
         return 1;
     }
 
@@ -80,7 +81,7 @@ int parse_rgb_string(char * input, uint8_t * r, uint8_t * g, uint8_t * b) {
 }
 
 
-void flash_leds_task (void * _) {
+void flash_leds_task(void * _) {
     for(;;) {
         vTaskDelay(FLASH_LEDS_PERIOD_MS);
 
@@ -104,11 +105,25 @@ void flash_leds_task (void * _) {
 
         printf("R: %d, G: %d, B: %d\n", R, G, B);
         if (sendData(OUTPUT_REG, color, N_LEDS) == 0) {
-            printf("data sent successfully\n");     
+            printf("data sent successfully\n");
         } else {
             fprintf(stderr, "error with sending data\n");
-        }; 
+        };
+
         free(color);
+
+        printf("saving data to nvs...\n");
+
+        nvs_handle_t handle;
+        nvs_open(NVS_RGB_NAMESPACE, NVS_READWRITE, &handle);
+
+        if (nvs_set_str(handle, NVS_RGB_VAR_NAME, colorString) == ESP_OK) {
+            printf("data saved successfully\n");
+        } else {
+            fprintf(stderr, "error occured while saving data to nvs :(\n");
+        }
+
+        nvs_close(handle);
     }    
 
 }
@@ -141,6 +156,30 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK( ret );
+
+    /*
+        Get the last used color from NVS (if there is one)
+    */
+    nvs_handle_t handle;
+
+    nvs_open(NVS_RGB_NAMESPACE, NVS_READONLY, &handle);
+
+    // RGB_STRING_SIZE, leds_color_rgb are defined in bluetooth.h
+    char * rgbData = strndup((const char *)leds_color_rgb, RGB_STRING_SIZE - 1);
+    size_t rgbDataLength = RGB_STRING_SIZE;
+
+    esp_err_t lastValueRet = nvs_get_str(handle, NVS_RGB_VAR_NAME, rgbData, &rgbDataLength);
+
+    if (lastValueRet) {
+        printf("did not find previously used rgb value, proceeding with default: %s\n", rgbData);
+    } else {
+        printf("got last used rgb data: %s\n", rgbData);
+        memcpy(leds_color_rgb, rgbData, RGB_STRING_SIZE);
+    }
+
+    free(rgbData);
+
+    nvs_close(handle);
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ret = esp_bt_controller_init(&bt_cfg);

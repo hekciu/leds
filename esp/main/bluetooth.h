@@ -35,7 +35,7 @@ enum
 #define SAMPLE_DEVICE_NAME          "HEKCIU_LEDS_EDGE"
 #define SVC_INST_ID                 0
 
-#define INPUT_DATA_CHAR_LEN_MAX     200 // tbh we need only literally 3 chars (RGB) maybe make it smaller
+#define INPUT_DATA_CHAR_LEN_MAX     200
 #define PREPARE_BUF_MAX_SIZE        1024
 #define CHAR_DECLARATION_SIZE       (sizeof(uint8_t))
 
@@ -123,7 +123,7 @@ static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRIT
 static const uint8_t char_prop_read_write          = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
 
 static const uint16_t RGB_STRING_SIZE              = 15;
-static const uint8_t leds_color_rgb[] = { '0', 'x', '0', '0', ',', '0', 'x', 'F', 'F', ',', '0', 'x', '0', '0' };
+static uint8_t leds_color_rgb[] = { '0', 'x', '0', '0', ',', '0', 'x', 'F', 'F', ',', '0', 'x', '0', '0' };
 
 /* Full Database Description - Used to add attributes into the database */
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
